@@ -1,11 +1,35 @@
 #!/usr/bin/env bash
+# This file is part of helpers4.
+# Copyright (C) 2026 helpers4
+# SPDX-License-Identifier: AGPL-3.0-or-later
 set -euo pipefail
 
 BASE_SHA="${1:-}"
 HEAD_SHA="${2:-}"
 
 if [[ -z "$BASE_SHA" || -z "$HEAD_SHA" ]]; then
-  echo "Error: base-sha and head-sha inputs are required."
+  if [[ -z "$BASE_SHA" ]]; then
+    BASE_REF=""
+    if [[ -n "${GITHUB_BASE_REF:-}" ]] && git show-ref --verify --quiet "refs/remotes/origin/$GITHUB_BASE_REF"; then
+      BASE_REF="origin/$GITHUB_BASE_REF"
+    elif git show-ref --verify --quiet "refs/remotes/origin/main"; then
+      BASE_REF="origin/main"
+    elif git show-ref --verify --quiet "refs/remotes/origin/master"; then
+      BASE_REF="origin/master"
+    fi
+
+    if [[ -n "$BASE_REF" ]]; then
+      BASE_SHA=$(git merge-base "$BASE_REF" HEAD)
+    fi
+  fi
+
+  if [[ -z "$HEAD_SHA" ]]; then
+    HEAD_SHA=$(git rev-parse HEAD)
+  fi
+fi
+
+if [[ -z "$BASE_SHA" || -z "$HEAD_SHA" ]]; then
+  echo "Error: base-sha and head-sha are required or must be derivable from Git refs."
   echo "Provide them from your workflow, for example:"
   echo "  base-sha: \${{ github.event.pull_request.base.sha }}"
   echo "  head-sha: \${{ github.event.pull_request.head.sha }}"

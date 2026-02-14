@@ -10,8 +10,8 @@ Validate commit messages against the Conventional Commits specification.
 ## Inputs
 
 - checkout: Whether to run actions/checkout before validation (default: true).
-- base-sha: Base commit SHA to compare against.
-- head-sha: Head commit SHA to validate.
+- base-sha: Base commit SHA to compare against (optional; defaults to merge-base with origin/$GITHUB_BASE_REF, origin/main, or origin/master).
+- head-sha: Head commit SHA to validate (optional; defaults to HEAD).
 
 ## Example (pull_request)
 

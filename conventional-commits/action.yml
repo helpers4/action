@@ -1,3 +1,6 @@
+# This file is part of helpers4.
+# Copyright (C) 2026 helpers4
+# SPDX-License-Identifier: AGPL-3.0-or-later
 name: Conventional Commits Check
 description: Validate commit messages against the Conventional Commits specification
 author: helpers4
@@ -8,15 +11,15 @@ inputs:
   checkout:
     description: Run actions/checkout with fetch-depth 0 before validation
     required: false
-    default: 'true'
+    default: "true"
   base-sha:
-    description: Base commit SHA to compare against
+    description: Base commit SHA to compare against (optional if running on push or pull_request)
     required: false
-    default: ''
+    default: ""
   head-sha:
-    description: Head commit SHA to validate
+    description: Head commit SHA to validate (optional if running on push or pull_request)
     required: false
-    default: ''
+    default: ""
 runs:
   using: composite
   steps:
