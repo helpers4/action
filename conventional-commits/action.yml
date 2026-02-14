@@ -1,0 +1,31 @@
+name: Conventional Commits Check
+description: Validate commit messages against the Conventional Commits specification
+author: helpers4
+branding:
+  icon: check-circle
+  color: blue
+inputs:
+  checkout:
+    description: Run actions/checkout with fetch-depth 0 before validation
+    required: false
+    default: 'true'
+  base-sha:
+    description: Base commit SHA to compare against
+    required: false
+    default: ''
+  head-sha:
+    description: Head commit SHA to validate
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      if: ${{ inputs.checkout == 'true' }}
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Validate commit messages
+      shell: bash
+      run: |
+        "${{ github.action_path }}/scripts/validate.sh" "${{ inputs.base-sha }}" "${{ inputs.head-sha }}"
