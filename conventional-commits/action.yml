@@ -20,6 +20,10 @@ inputs:
     description: Head commit SHA to validate (optional if running on push or pull_request)
     required: false
     default: ""
+  pr-comment:
+    description: Comment on PR with validation results (none, error, success, both)
+    required: false
+    default: "error"
 runs:
   using: composite
   steps:
@@ -31,4 +35,4 @@ runs:
     - name: Validate commit messages
       shell: bash
       run: |
-        "${{ github.action_path }}/scripts/validate.sh" "${{ inputs.base-sha }}" "${{ inputs.head-sha }}"
+        "${{ github.action_path }}/scripts/validate.sh" "${{ inputs.base-sha }}" "${{ inputs.head-sha }}" "${{ inputs.pr-comment }}"

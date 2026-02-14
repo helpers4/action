@@ -6,6 +6,7 @@ set -euo pipefail
 
 BASE_SHA="${1:-}"
 HEAD_SHA="${2:-}"
+PR_COMMENT="${3:-error}"
 
 if [[ -z "$BASE_SHA" || -z "$HEAD_SHA" ]]; then
   if [[ -z "$BASE_SHA" ]]; then
@@ -46,6 +47,7 @@ COMMITS=$(git log --no-merges --format=%H "$BASE_SHA..$HEAD_SHA")
 EXIT_CODE=0
 INVALID_COUNT=0
 VALID_COUNT=0
+INVALID_COMMITS=""
 
 echo "-----------------------------------------------------"
 echo "Validating commit messages..."
@@ -56,11 +58,12 @@ for COMMIT in $COMMITS; do
   COMMIT_SHORT=$(echo "$COMMIT" | cut -c1-7)
 
   if ! echo "$MESSAGE" | grep -qE "^($TYPES)(\([^)]+\))?!?: .+"; then
-    echo "INVALID $COMMIT_SHORT: $MESSAGE"
+    echo "❌ INVALID $COMMIT_SHORT: $MESSAGE"
     INVALID_COUNT=$((INVALID_COUNT + 1))
+    INVALID_COMMITS="$INVALID_COMMITS- \`$COMMIT_SHORT\`: $MESSAGE"$'\n'
     EXIT_CODE=1
   else
-    echo "VALID $COMMIT_SHORT: $MESSAGE"
+    echo "✅ VALID $COMMIT_SHORT: $MESSAGE"
     VALID_COUNT=$((VALID_COUNT + 1))
   fi
 done
@@ -69,6 +72,63 @@ echo ""
 echo "-----------------------------------------------------"
 echo "Summary: $VALID_COUNT valid, $INVALID_COUNT invalid"
 echo "-----------------------------------------------------"
+
+# Determine if we should post to PR
+SHOULD_POST_PR=0
+case "$PR_COMMENT" in
+  none|false)
+    SHOULD_POST_PR=0
+    ;;
+  error)
+    [[ $EXIT_CODE -ne 0 ]] && SHOULD_POST_PR=1
+    ;;
+  success)
+    [[ $EXIT_CODE -eq 0 ]] && SHOULD_POST_PR=1
+    ;;
+  both|true)
+    SHOULD_POST_PR=1
+    ;;
+esac
+
+# Post comment to PR if needed
+if [[ $SHOULD_POST_PR -eq 1 && -n "${GITHUB_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" && -n "${GITHUB_EVENT_PATH:-}" ]]; then
+  PR_NUMBER=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "")
+  
+  if [[ -n "$PR_NUMBER" ]]; then
+    # Prepare comment based on validation result
+    if [[ $EXIT_CODE -ne 0 ]]; then
+      COMMENT_BODY="⚠️ **Conventional Commits Validation Failed**
+
+❌ Found $INVALID_COUNT commit(s) with invalid message format:
+
+$INVALID_COMMITS
+**Format:** \`<type>[optional scope][optional !]: <description>\`
+
+**Valid types:** feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+
+**Examples:**
+- \`feat: add new feature\`
+- \`feat(api): add new endpoint\`
+- \`fix(SLM-1234): resolve bug\`
+- \`feat(scope)!: breaking change\`
+
+📖 Learn more: https://www.conventionalcommits.org/"
+    else
+      COMMENT_BODY="✅ **Conventional Commits Validation Passed**
+
+All $VALID_COUNT commit(s) follow the Conventional Commits specification!
+
+📖 Learn more: https://www.conventionalcommits.org/"
+    fi
+
+    # API call to post PR comment
+    curl -s -X POST \
+      -H "Authorization: token $GITHUB_TOKEN" \
+      -H "Accept: application/vnd.github.v3+json" \
+      "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+      -d "{\"body\":$(echo "$COMMENT_BODY" | jq -Rs '.')}" > /dev/null
+  fi
+fi
 
 if [[ $EXIT_CODE -ne 0 ]]; then
   echo ""
