@@ -96,13 +96,25 @@ action/
     require-scope: true
 ```
 
+### CI/CD Workflows
+
+| Workflow | Trigger | Jobs |
+|----------|---------|------|
+| `pr-validation.yml` | Pull request → main | conventional-commits, shellcheck, test-action, pr-comment |
+
+- **conventional-commits** — Validates PR commit messages against conventional commit format
+- **shellcheck** — Lints `validate.sh` with ShellCheck
+- **test-action** — Syntax check and basic validation of the action script
+- **pr-comment** — Posts/updates a status summary comment on the PR
+
 ### Adding a New Action
 
 1. Create `<action-name>/action.yml`
 2. Create `<action-name>/scripts/` with implementation
 3. Create `<action-name>/README.md`
 4. Update root `README.md`
-5. Update this `AGENTS.md` (scopes + structure)
+5. **Update `.github/workflows/pr-validation.yml`** — Add shellcheck/test jobs for the new action
+6. Update this `AGENTS.md` (scopes + structure)
 
 ### License Header (required on all scripts)
 
