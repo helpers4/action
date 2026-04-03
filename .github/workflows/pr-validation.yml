@@ -19,7 +19,7 @@ jobs:
         uses: helpers4/action/conventional-commits@main
         with:
           checkout: "true"
-          scopes: "conventional-commits|CI-CD"
+          scopes: "conventional-commits|deps|CI-CD"
           pr-comment: "error"
 
       - name: Set status
