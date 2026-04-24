@@ -32,7 +32,7 @@ jobs:
         id: trigganator
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ vars.TRIGGANATOR_ID }}
+          client-id: ${{ vars.TRIGGANATOR_ID }}
           private-key: ${{ secrets.TRIGGANATOR_KEY }}
           owner: helpers4
           repositories: website
@@ -44,4 +44,4 @@ jobs:
           token: ${{ steps.trigganator.outputs.token }}
           repository: helpers4/website
           event-type: action-release
-          client-payload: '{"version": "${{ github.ref_name }}"}'
+          client-payload: "{\"version\": \"${{ github.ref_name }}\"}"
