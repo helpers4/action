@@ -9,10 +9,20 @@ BASE_SHA="${INPUT_BASE_SHA:-}"
 HEAD_SHA="${INPUT_HEAD_SHA:-}"
 TYPES="${INPUT_TYPES:-feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert}"
 SCOPES="${INPUT_SCOPES:-}"
+VSCODE_SETTINGS="${INPUT_VSCODE_SETTINGS:-.vscode/settings.json}"
 REQUIRE_SCOPE="${INPUT_REQUIRE_SCOPE:-false}"
 IGNORE_COMMITS="${INPUT_IGNORE_COMMITS:-}"
 VALIDATE_PR_TITLE="${INPUT_VALIDATE_PR_TITLE:-false}"
 PR_COMMENT="${INPUT_PR_COMMENT:-error}"
+
+# Auto-read scopes from VS Code settings if not explicitly provided
+if [[ -z "$SCOPES" && -f "$VSCODE_SETTINGS" ]]; then
+  VSCODE_SCOPES=$(jq -r 'if .["conventionalCommits.scopes"] then .["conventionalCommits.scopes"] | join("|") else "" end' "$VSCODE_SETTINGS" 2>/dev/null || echo "")
+  if [[ -n "$VSCODE_SCOPES" ]]; then
+    echo "Auto-detected scopes from $VSCODE_SETTINGS: $VSCODE_SCOPES"
+    SCOPES="$VSCODE_SCOPES"
+  fi
+fi
 
 if [[ -z "$BASE_SHA" || -z "$HEAD_SHA" ]]; then
   if [[ -z "$BASE_SHA" ]]; then
@@ -121,7 +131,7 @@ echo "-----------------------------------------------------"
 # Validate PR title if requested
 if [[ "$VALIDATE_PR_TITLE" == "true" && -n "${GITHUB_EVENT_PATH:-}" ]]; then
   PR_TITLE=$(jq -r '.pull_request.title // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "")
-  
+
   if [[ -n "$PR_TITLE" ]]; then
     echo ""
     echo "Validating PR title..."
@@ -146,7 +156,7 @@ if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   fi
   echo "invalid-count=$INVALID_COUNT" >> "$GITHUB_OUTPUT"
   echo "valid-count=$VALID_COUNT" >> "$GITHUB_OUTPUT"
-  
+
   # Clean error details for output
   ERROR_MSG="${ERROR_DETAILS%|}"
   echo "error-message=$ERROR_MSG" >> "$GITHUB_OUTPUT"
@@ -172,7 +182,7 @@ esac
 # Post comment to PR if needed
 if [[ $SHOULD_POST_PR -eq 1 && -n "${GITHUB_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" && -n "${GITHUB_EVENT_PATH:-}" ]]; then
   PR_NUMBER=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "")
-  
+
   if [[ -n "$PR_NUMBER" ]]; then
     # Prepare comment based on validation result
     if [[ $EXIT_CODE -ne 0 ]]; then

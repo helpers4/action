@@ -27,6 +27,11 @@ Validate commit messages against the Conventional Commits specification.
   - Example: `[a-z]+` to only allow lowercase scopes
   - Example: `JIRA-\d+|PROJ-\d+` to require ticket numbers
 
+- **vscode-settings**: Path to a VS Code `settings.json` file from which `conventionalCommits.scopes` is auto-read when `scopes` is empty (default: `.vscode/settings.json`).
+  - If the file exists and defines `conventionalCommits.scopes`, those values are used as the scope allowlist — no need to repeat them in the workflow.
+  - Explicit `scopes` input always takes precedence.
+  - Set to an empty string or a non-existent path to disable auto-detection.
+
 - **require-scope**: Require a scope in each commit message (default: `false`).
 
 - **ignore-commits**: Patterns to ignore (regex, newline-separated).
@@ -80,6 +85,34 @@ jobs:
   with:
     scopes: 'api|ui|core|docs'
     require-scope: 'true'
+```
+
+### Auto-read Scopes from VS Code Settings
+
+If your repo already has `.vscode/settings.json` with `conventionalCommits.scopes`, no extra configuration is needed — the action reads them automatically:
+
+```jsonc
+// .vscode/settings.json
+{
+  "conventionalCommits.scopes": ["api", "ui", "core"]
+}
+```
+
+```yaml
+- name: Validate commits
+  uses: helpers4/action/conventional-commits@v1
+  with:
+    require-scope: 'true'
+    # scopes auto-read from .vscode/settings.json → api|ui|core
+```
+
+Use `vscode-settings` to point to a different file if needed:
+
+```yaml
+- name: Validate commits
+  uses: helpers4/action/conventional-commits@v1
+  with:
+    vscode-settings: '.config/vscode-settings.json'
 ```
 
 ### With Ticket Numbers in Scopes
