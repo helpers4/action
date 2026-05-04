@@ -1,6 +1,7 @@
 {
   "conventionalCommits.scopes": [
     "conventional-commits",
+    "deps",
     "CI-CD"
   ]
 }
