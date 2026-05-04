@@ -17,7 +17,9 @@ PR_COMMENT="${INPUT_PR_COMMENT:-error}"
 
 # Auto-read scopes from VS Code settings if not explicitly provided
 if [[ -z "$SCOPES" && -f "$VSCODE_SETTINGS" ]]; then
-  VSCODE_SCOPES=$(jq -r 'if .["conventionalCommits.scopes"] then .["conventionalCommits.scopes"] | join("|") else "" end' "$VSCODE_SETTINGS" 2>/dev/null || echo "")
+  # Strip JSONC line comments (// ...) and trailing commas before parsing with jq
+  VSCODE_SCOPES=$(sed 's|//[^"]*$||g; s|,\s*\([}\]]\)|\1|g' "$VSCODE_SETTINGS" \
+    | jq -r 'if .["conventionalCommits.scopes"] then .["conventionalCommits.scopes"] | join("|") else "" end' 2>/dev/null || echo "")
   if [[ -n "$VSCODE_SCOPES" ]]; then
     echo "Auto-detected scopes from $VSCODE_SETTINGS: $VSCODE_SCOPES"
     SCOPES="$VSCODE_SCOPES"

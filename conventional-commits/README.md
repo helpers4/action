@@ -91,12 +91,13 @@ jobs:
 
 If your repo already has `.vscode/settings.json` with `conventionalCommits.scopes`, no extra configuration is needed — the action reads them automatically:
 
-```jsonc
-// .vscode/settings.json
+```json
 {
   "conventionalCommits.scopes": ["api", "ui", "core"]
 }
 ```
+
+> The file may contain JSONC-style line comments (`//`) and trailing commas — they are stripped before parsing.
 
 ```yaml
 - name: Validate commits
