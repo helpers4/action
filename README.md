@@ -20,7 +20,7 @@ Validates that all commit messages in a pull request follow the [Conventional Co
 **Usage:**
 
 ```yaml
-- uses: helpers4/action/conventional-commits@main
+- uses: helpers4/action/conventional-commits@v1
 ```
 
 **Features:**
