@@ -28,8 +28,12 @@ inputs:
     description: "Allowed scopes (regex patterns, pipe-separated) - empty means all scopes allowed"
     required: false
     default: ""
+  scopes-file:
+    description: "Path to agnostic scopes JSON file (array) to auto-read when scopes input is empty — takes priority over vscode-settings"
+    required: false
+    default: "scopes.json"
   vscode-settings:
-    description: "Path to VS Code settings.json to auto-read conventionalCommits.scopes when scopes input is empty"
+    description: "Path to VS Code settings.json to auto-read conventionalCommits.scopes when scopes input and scopes-file are both absent"
     required: false
     default: ".vscode/settings.json"
   require-scope:
@@ -77,6 +81,7 @@ runs:
         INPUT_HEAD_SHA: ${{ inputs.head-sha }}
         INPUT_TYPES: ${{ inputs.types }}
         INPUT_SCOPES: ${{ inputs.scopes }}
+        INPUT_SCOPES_FILE: ${{ inputs.scopes-file }}
         INPUT_VSCODE_SETTINGS: ${{ inputs.vscode-settings }}
         INPUT_REQUIRE_SCOPE: ${{ inputs.require-scope }}
         INPUT_IGNORE_COMMITS: ${{ inputs.ignore-commits }}

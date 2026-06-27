@@ -9,13 +9,22 @@ BASE_SHA="${INPUT_BASE_SHA:-}"
 HEAD_SHA="${INPUT_HEAD_SHA:-}"
 TYPES="${INPUT_TYPES:-feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert}"
 SCOPES="${INPUT_SCOPES:-}"
+SCOPES_FILE="${INPUT_SCOPES_FILE:-scopes.json}"
 VSCODE_SETTINGS="${INPUT_VSCODE_SETTINGS:-.vscode/settings.json}"
 REQUIRE_SCOPE="${INPUT_REQUIRE_SCOPE:-false}"
 IGNORE_COMMITS="${INPUT_IGNORE_COMMITS:-}"
 VALIDATE_PR_TITLE="${INPUT_VALIDATE_PR_TITLE:-false}"
 PR_COMMENT="${INPUT_PR_COMMENT:-error}"
 
-# Auto-read scopes from VS Code settings if not explicitly provided
+# Priority: scopes (explicit) > scopes-file > vscode-settings
+if [[ -z "$SCOPES" && -f "$SCOPES_FILE" ]]; then
+  FILE_SCOPES=$(jq -r '.[]' "$SCOPES_FILE" | paste -sd '|' || echo "")
+  if [[ -n "$FILE_SCOPES" ]]; then
+    echo "Auto-detected scopes from $SCOPES_FILE: $FILE_SCOPES"
+    SCOPES="$FILE_SCOPES"
+  fi
+fi
+
 if [[ -z "$SCOPES" && -f "$VSCODE_SETTINGS" ]]; then
   # Strip JSONC line comments (// ...) and trailing commas before parsing with jq
   VSCODE_SCOPES=$(sed 's|//[^"]*$||g; s|,\s*\([}\]]\)|\1|g' "$VSCODE_SETTINGS" \
