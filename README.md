@@ -7,6 +7,7 @@
 <p align="center">
   <a href="https://github.com/helpers4/action/blob/main/LICENSE"><img src="https://img.shields.io/github/license/helpers4/action?color=blue" alt="license" /></a>
   <a href="https://github.com/helpers4/action"><img src="https://img.shields.io/github/last-commit/helpers4/action" alt="last commit" /></a>
+  <a href="https://deepwiki.com/helpers4/action"><img src="https://img.shields.io/badge/DeepWiki-helpers4%2Faction-blue" alt="Ask DeepWiki" /></a>
 </p>
 
 ---
