@@ -34,7 +34,7 @@ Validates that all commit messages in a pull request follow the [Conventional Co
 
 ### Setup pnpm
 
-Sets up Node.js + pnpm via corepack, optionally installing dependencies.
+Sets up Node.js + pnpm (via the official `pnpm/action-setup`), optionally installing dependencies.
 
 **Usage:**
 
