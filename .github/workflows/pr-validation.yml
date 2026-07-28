@@ -95,6 +95,7 @@ jobs:
           node-version: "24"
           version: "10"
           install: "false"
+          cache: "false"
 
       - name: "Test: node and pnpm are on PATH"
         run: |
