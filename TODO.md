@@ -45,3 +45,48 @@ Only open items live here. Anything finished is in git history, not duplicated i
   release-creation "Publish to Marketplace" flow (primary/secondary category — likely
   "Continuous Integration" — plus the existing `branding` icon/color from `action.yml` feeds the
   listing card automatically), and confirm the listing renders correctly.
+
+---
+
+## New reusable action candidates
+
+> Surveyed every workflow file in all six repos (`.dev`, `.github`, `action`, `typescript`,
+> `website`, `devcontainer`) on 2026-07-28, looking for CI logic copy-pasted across repos that
+> could become a new composite action here (alongside `conventional-commits`) instead of staying
+> duplicated. Ranked by how many times the exact pattern is repeated today.
+
+- [ ] 🔴 **PR-validation status-comment table** — the ~80-line `actions/github-script` block that
+  builds a `| icon | job | passing/failing |` table and creates-or-updates a single bot comment on
+  the PR is duplicated near-verbatim in `action/pr-validation.yml`, `typescript/pr-validation.yml`,
+  `website/pr-validation.yml`, and `devcontainer/pr-validation.yml` — 4 copies, only the job-name
+  list differs (`typescript`'s also bolts on coverage/mutation/runtime/bench sections, but the
+  core table-building + find-or-create-comment logic is identical). A composite action taking a
+  JSON `{ "label": "status" }` map as input (plus optional extra Markdown sections) would collapse
+  all four to a few lines each.
+- [ ] 🔴 **Node + pnpm setup boilerplate** — `actions/checkout` → `actions/setup-node` →
+  `corepack enable` (or `pnpm/action-setup`) → `pnpm install --frozen-lockfile` repeats **15+
+  times**: all 7 of `typescript`'s `job-*.yml` reusable workflows, 3 jobs inside
+  `website/pr-validation.yml` (build/lighthouse/typecheck), `website`'s 3 `on-*-release.yml`
+  handlers, and `action/pr-validation.yml`'s `test-action`/`build` jobs. `typescript` already
+  half-solved this for itself via its own reusable `job-*.yml` files, but `website` and `action`
+  still repeat the raw 4-step sequence inline. Highest-value single extraction by copy count.
+- [ ] 🟡 **`trigger-website-update` (Trigganator dispatch)** — "get a GitHub App token scoped to
+  `helpers4/website` → `peter-evans/repository-dispatch` with an `event-type`/`client-payload`"
+  repeats **7 times**: `action/release.yml`, `devcontainer/release.yml`, `typescript/release.yml`
+  (twice — primary + Pushinator fallback), and all three `.github/workflows/manual-fallback-
+  website-*.yml` files (verified byte-for-byte identical apart from repo name/event-type/payload).
+  A composite action taking `event-type` + `payload` (+ optional fallback app-id/key) inputs would
+  let every caller drop to ~5 lines and fix the retry/fallback logic in one place instead of only
+  `typescript` having it.
+- [ ] 🟡 **"Set job status output" step** — the 6-line `if [ "${{ job.status }}" == "success" ]
+  ... echo "status=..." >> $GITHUB_OUTPUT` boilerplate repeats in nearly every job of every
+  `pr-validation.yml` across `action`, `typescript`, `website`, and `devcontainer` (15+ occurrences
+  counted). Smallest win per-copy but the most-repeated single snippet in the whole survey — worth
+  it mainly because it'd also normalize the `job.status` vs `$JOB_STATUS` env-var inconsistency
+  already visible between repos (some interpolate `${{ job.status }}` directly in `run:`, others
+  pass it through `env:` first).
+- [ ] 🟢 **ShellCheck runner** — checkout → `apt-get install shellcheck` → `shellcheck -S warning
+  <path>` repeats in `action/pr-validation.yml` (`shellcheck` job) and
+  `devcontainer/pr-validation.yml` (`shellcheck` job, which also does an extra bootstrap-diff
+  check inline). Only 2 copies today, smaller payoff, but trivial to extract — a `path`/`glob`
+  input composite action.
