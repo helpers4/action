@@ -1,0 +1,42 @@
+# This file is part of helpers4.
+# Copyright (C) 2025 baxyz
+# SPDX-License-Identifier: LGPL-3.0-or-later
+name: PR Status Comment
+description: Post or update a single sticky PR comment summarizing job statuses as a table
+author: helpers4
+branding:
+  icon: message-square
+  color: blue
+inputs:
+  jobs:
+    description: 'JSON object mapping a display label to a job status, e.g. {"🧾 Conventional Commits": "success"}. Statuses are typically needs.<job>.result values.'
+    required: true
+  extra-markdown:
+    description: Additional Markdown appended after the status table (e.g. coverage/mutation sections)
+    required: false
+    default: ""
+  comment-header:
+    description: Header used to identify the sticky comment to update, not shown on screen
+    required: false
+    default: "PR Validation"
+  github-token:
+    description: Token used to create or update the comment
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - name: Build status comment body
+      id: build
+      shell: bash
+      env:
+        INPUT_JOBS: ${{ inputs.jobs }}
+        INPUT_EXTRA_MARKDOWN: ${{ inputs.extra-markdown }}
+      run: "${{ github.action_path }}/scripts/build-comment.sh"
+
+    - name: Post or update sticky comment
+      uses: marocchino/sticky-pull-request-comment@v3.0.5
+      with:
+        header: ${{ inputs.comment-header }}
+        message: ${{ steps.build.outputs.body }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
