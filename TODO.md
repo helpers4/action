@@ -54,39 +54,55 @@ Only open items live here. Anything finished is in git history, not duplicated i
 > `website`, `devcontainer`) on 2026-07-28, looking for CI logic copy-pasted across repos that
 > could become a new composite action here (alongside `conventional-commits`) instead of staying
 > duplicated. Ranked by how many times the exact pattern is repeated today.
+>
+> **Checked the GitHub Marketplace before adding any of these** (2026-07-28) — two items below
+> changed as a result; don't re-litigate without new evidence:
+>
+> - **ShellCheck runner dropped entirely** — [`ludeeus/action-shellcheck`](https://github.com/ludeeus/action-shellcheck)
+>   (350★, active) already does exactly this (recursive scan, configurable options/paths). No
+>   reason to build and maintain our own; adopt it directly in `action` and `devcontainer` instead.
+> - **"Set job status output" isn't an extraction candidate at all** — GitHub Actions natively
+>   exposes `needs.<job_id>.result` (`success`/`failure`/`skipped`/`cancelled`) for any job listed
+>   as a direct dependency, no explicit output plumbing required. The `if [ "${{ job.status }}"...
+>   ] echo "status=..." >> $GITHUB_OUTPUT` step in every job is dead weight that can just be
+>   deleted, with downstream jobs reading `needs.<job>.result` instead of
+>   `needs.<job>.outputs.status`. Not a new-action item — a cleanup item, moved out of this list
+>   (see `typescript`/`website`/`devcontainer` TODOs or handle inline next time one of these
+>   `pr-validation.yml` files is touched).
 
 - [ ] 🔴 **PR-validation status-comment table** — the ~80-line `actions/github-script` block that
   builds a `| icon | job | passing/failing |` table and creates-or-updates a single bot comment on
   the PR is duplicated near-verbatim in `action/pr-validation.yml`, `typescript/pr-validation.yml`,
   `website/pr-validation.yml`, and `devcontainer/pr-validation.yml` — 4 copies, only the job-name
   list differs (`typescript`'s also bolts on coverage/mutation/runtime/bench sections, but the
-  core table-building + find-or-create-comment logic is identical). A composite action taking a
-  JSON `{ "label": "status" }` map as input (plus optional extra Markdown sections) would collapse
-  all four to a few lines each.
+  core table-building + find-or-create-comment logic is identical). **Marketplace check**:
+  [`marocchino/sticky-pull-request-comment`](https://github.com/marocchino/sticky-pull-request-comment)
+  (642★, active) already solves the fiddly half of this — find-or-create/update a single bot
+  comment — but no generic action renders our specific formatted table (icons, coverage bars,
+  mutation/bench sections). Build this as a thin composite action that assembles the Markdown
+  from a JSON `{ "label": "status" }` input and delegates the actual posting to
+  `sticky-pull-request-comment`, rather than reimplementing comment CRUD ourselves.
 - [ ] 🔴 **Node + pnpm setup boilerplate** — `actions/checkout` → `actions/setup-node` →
   `corepack enable` (or `pnpm/action-setup`) → `pnpm install --frozen-lockfile` repeats **15+
   times**: all 7 of `typescript`'s `job-*.yml` reusable workflows, 3 jobs inside
   `website/pr-validation.yml` (build/lighthouse/typecheck), `website`'s 3 `on-*-release.yml`
   handlers, and `action/pr-validation.yml`'s `test-action`/`build` jobs. `typescript` already
   half-solved this for itself via its own reusable `job-*.yml` files, but `website` and `action`
-  still repeat the raw 4-step sequence inline. Highest-value single extraction by copy count.
+  still repeat the raw 4-step sequence inline. **Marketplace check**:
+  [`dafnik/setup-node-pnpm`](https://github.com/dafnik/setup-node-pnpm) exists but is only 3★ and
+  young, and doesn't explicitly expose `corepack enable`/`--frozen-lockfile` the way our jobs need
+  — too immature to add as a supply-chain dependency given this org's pinned-SHA/Scorecard
+  posture. Still the highest-value extraction by copy count; build our own.
 - [ ] 🟡 **`trigger-website-update` (Trigganator dispatch)** — "get a GitHub App token scoped to
   `helpers4/website` → `peter-evans/repository-dispatch` with an `event-type`/`client-payload`"
   repeats **7 times**: `action/release.yml`, `devcontainer/release.yml`, `typescript/release.yml`
   (twice — primary + Pushinator fallback), and all three `.github/workflows/manual-fallback-
   website-*.yml` files (verified byte-for-byte identical apart from repo name/event-type/payload).
-  A composite action taking `event-type` + `payload` (+ optional fallback app-id/key) inputs would
-  let every caller drop to ~5 lines and fix the retry/fallback logic in one place instead of only
-  `typescript` having it.
-- [ ] 🟡 **"Set job status output" step** — the 6-line `if [ "${{ job.status }}" == "success" ]
-  ... echo "status=..." >> $GITHUB_OUTPUT` boilerplate repeats in nearly every job of every
-  `pr-validation.yml` across `action`, `typescript`, `website`, and `devcontainer` (15+ occurrences
-  counted). Smallest win per-copy but the most-repeated single snippet in the whole survey — worth
-  it mainly because it'd also normalize the `job.status` vs `$JOB_STATUS` env-var inconsistency
-  already visible between repos (some interpolate `${{ job.status }}` directly in `run:`, others
-  pass it through `env:` first).
-- [ ] 🟢 **ShellCheck runner** — checkout → `apt-get install shellcheck` → `shellcheck -S warning
-  <path>` repeats in `action/pr-validation.yml` (`shellcheck` job) and
-  `devcontainer/pr-validation.yml` (`shellcheck` job, which also does an extra bootstrap-diff
-  check inline). Only 2 copies today, smaller payoff, but trivial to extract — a `path`/`glob`
-  input composite action.
+  **Marketplace check**: the two underlying primitives we already use —
+  [`actions/create-github-app-token`](https://github.com/actions/create-github-app-token) (865★,
+  official) and [`peter-evans/repository-dispatch`](https://github.com/peter-evans/repository-dispatch)
+  (1203★) — are both solid; no third-party action packages "token + dispatch + fallback retry" as
+  one step for our specific case, so there's nothing to adopt instead. The duplication is in our
+  own assembly, not the primitives. A composite action taking `event-type` + `payload` (+ optional
+  fallback app-id/key) inputs would let every caller drop to ~5 lines and fix the retry/fallback
+  logic in one place instead of only `typescript` having it.
