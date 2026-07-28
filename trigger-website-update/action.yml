@@ -41,6 +41,7 @@ runs:
   steps:
     - name: Get primary token
       id: primary_token
+      continue-on-error: true
       uses: actions/create-github-app-token@v3.2.0
       with:
         client-id: ${{ inputs.app-id }}
@@ -51,6 +52,7 @@ runs:
 
     - name: Dispatch (primary)
       id: primary_dispatch
+      if: ${{ steps.primary_token.outcome == 'success' }}
       continue-on-error: true
       uses: peter-evans/repository-dispatch@v4.0.1
       with:
@@ -61,7 +63,8 @@ runs:
 
     - name: Get fallback token
       id: fallback_token
-      if: ${{ steps.primary_dispatch.outcome != 'success' && inputs.fallback-app-id != '' }}
+      if: ${{ always() && steps.primary_dispatch.outcome != 'success' && inputs.fallback-app-id != '' }}
+      continue-on-error: true
       uses: actions/create-github-app-token@v3.2.0
       with:
         client-id: ${{ inputs.fallback-app-id }}
@@ -72,7 +75,7 @@ runs:
 
     - name: Dispatch (fallback)
       id: fallback_dispatch
-      if: ${{ steps.primary_dispatch.outcome != 'success' && inputs.fallback-app-id != '' }}
+      if: ${{ always() && steps.fallback_token.outcome == 'success' }}
       continue-on-error: true
       uses: peter-evans/repository-dispatch@v4.0.1
       with:
@@ -82,6 +85,7 @@ runs:
         client-payload: ${{ inputs.payload }}
 
     - name: Summary
+      if: always()
       shell: bash
       env:
         PRIMARY_OUTCOME: ${{ steps.primary_dispatch.outcome }}

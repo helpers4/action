@@ -39,6 +39,7 @@ Sets up Node.js + pnpm (via the official `pnpm/action-setup`), optionally instal
 **Usage:**
 
 ```yaml
+- uses: actions/checkout@v7
 - uses: helpers4/action/setup-pnpm@v1
   with:
     node-version: "26"
