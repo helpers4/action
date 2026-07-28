@@ -1,6 +1,7 @@
 # TODO — `helpers4/action`
 
-> Last refresh: 2026-07-28.
+> Last refresh: 2026-07-28 (updated same day: 3 candidates built, see "Roll out new actions to
+> consumers" below).
 
 Legend: 🔴 High priority · 🟡 Medium · 🟢 Low
 
@@ -48,61 +49,34 @@ Only open items live here. Anything finished is in git history, not duplicated i
 
 ---
 
-## New reusable action candidates
+## Roll out new actions to consumers
 
-> Surveyed every workflow file in all six repos (`.dev`, `.github`, `action`, `typescript`,
-> `website`, `devcontainer`) on 2026-07-28, looking for CI logic copy-pasted across repos that
-> could become a new composite action here (alongside `conventional-commits`) instead of staying
-> duplicated. Ranked by how many times the exact pattern is repeated today.
->
-> **Checked the GitHub Marketplace before adding any of these** (2026-07-28) — two items below
-> changed as a result; don't re-litigate without new evidence:
->
-> - **ShellCheck runner dropped entirely** — [`ludeeus/action-shellcheck`](https://github.com/ludeeus/action-shellcheck)
->   (350★, active) already does exactly this (recursive scan, configurable options/paths). No
->   reason to build and maintain our own; adopt it directly in `action` and `devcontainer` instead.
-> - **"Set job status output" isn't an extraction candidate at all** — GitHub Actions natively
->   exposes `needs.<job_id>.result` (`success`/`failure`/`skipped`/`cancelled`) for any job listed
->   as a direct dependency, no explicit output plumbing required. The `if [ "${{ job.status }}"...
->   ] echo "status=..." >> $GITHUB_OUTPUT` step in every job is dead weight that can just be
->   deleted, with downstream jobs reading `needs.<job>.result` instead of
->   `needs.<job>.outputs.status`. Not a new-action item — a cleanup item, moved out of this list
->   (see `typescript`/`website`/`devcontainer` TODOs or handle inline next time one of these
->   `pr-validation.yml` files is touched).
+> `setup-pnpm`, `pr-status-comment`, and `trigger-website-update` were built and dogfooded in this
+> repo itself (#12, #13) — see git history, not duplicated here. `action`'s own CI has no
+> Node/pnpm build step, so `setup-pnpm` hasn't had a real exercise yet (only a smoke test);
+> `pr-status-comment` and `trigger-website-update` are live in this repo's `pr-validation.yml` /
+> `release.yml`. **Gate**: don't start any item below until #12/#13 are merged and this repo's own
+> CI has run green on `main` at least once with them — that's the first real validation these
+> actions get before spreading them to other repos' release pipelines.
 
-- [ ] 🔴 **PR-validation status-comment table** — the ~80-line `actions/github-script` block that
-  builds a `| icon | job | passing/failing |` table and creates-or-updates a single bot comment on
-  the PR is duplicated near-verbatim in `action/pr-validation.yml`, `typescript/pr-validation.yml`,
-  `website/pr-validation.yml`, and `devcontainer/pr-validation.yml` — 4 copies, only the job-name
-  list differs (`typescript`'s also bolts on coverage/mutation/runtime/bench sections, but the
-  core table-building + find-or-create-comment logic is identical). **Marketplace check**:
-  [`marocchino/sticky-pull-request-comment`](https://github.com/marocchino/sticky-pull-request-comment)
-  (642★, active) already solves the fiddly half of this — find-or-create/update a single bot
-  comment — but no generic action renders our specific formatted table (icons, coverage bars,
-  mutation/bench sections). Build this as a thin composite action that assembles the Markdown
-  from a JSON `{ "label": "status" }` input and delegates the actual posting to
-  `sticky-pull-request-comment`, rather than reimplementing comment CRUD ourselves.
-- [ ] 🔴 **Node + pnpm setup boilerplate** — `actions/checkout` → `actions/setup-node` →
-  `corepack enable` (or `pnpm/action-setup`) → `pnpm install --frozen-lockfile` repeats **15+
-  times**: all 7 of `typescript`'s `job-*.yml` reusable workflows, 3 jobs inside
-  `website/pr-validation.yml` (build/lighthouse/typecheck), `website`'s 3 `on-*-release.yml`
-  handlers, and `action/pr-validation.yml`'s `test-action`/`build` jobs. `typescript` already
-  half-solved this for itself via its own reusable `job-*.yml` files, but `website` and `action`
-  still repeat the raw 4-step sequence inline. **Marketplace check**:
-  [`dafnik/setup-node-pnpm`](https://github.com/dafnik/setup-node-pnpm) exists but is only 3★ and
-  young, and doesn't explicitly expose `corepack enable`/`--frozen-lockfile` the way our jobs need
-  — too immature to add as a supply-chain dependency given this org's pinned-SHA/Scorecard
-  posture. Still the highest-value extraction by copy count; build our own.
-- [ ] 🟡 **`trigger-website-update` (Trigganator dispatch)** — "get a GitHub App token scoped to
-  `helpers4/website` → `peter-evans/repository-dispatch` with an `event-type`/`client-payload`"
-  repeats **7 times**: `action/release.yml`, `devcontainer/release.yml`, `typescript/release.yml`
-  (twice — primary + Pushinator fallback), and all three `.github/workflows/manual-fallback-
-  website-*.yml` files (verified byte-for-byte identical apart from repo name/event-type/payload).
-  **Marketplace check**: the two underlying primitives we already use —
-  [`actions/create-github-app-token`](https://github.com/actions/create-github-app-token) (865★,
-  official) and [`peter-evans/repository-dispatch`](https://github.com/peter-evans/repository-dispatch)
-  (1203★) — are both solid; no third-party action packages "token + dispatch + fallback retry" as
-  one step for our specific case, so there's nothing to adopt instead. The duplication is in our
-  own assembly, not the primitives. A composite action taking `event-type` + `payload` (+ optional
-  fallback app-id/key) inputs would let every caller drop to ~5 lines and fix the retry/fallback
-  logic in one place instead of only `typescript` having it.
+- [ ] 🟡 **`website`**: swap the `build`/`lighthouse`/`typecheck` jobs' setup sequence in
+  `pr-validation.yml` for `setup-pnpm` (first real, non-smoke-test exercise of it), the
+  status-comment block for `pr-status-comment`, and the 3 `on-*-release.yml` handlers' Node/pnpm
+  setup for `setup-pnpm` too. Lowest-risk consumer repo to go first — no release-automation
+  behavior change involved, pure extraction.
+- [ ] 🟡 **`devcontainer`**: `pr-validation.yml`'s `shellcheck` job → `ludeeus/action-shellcheck`
+  (keep the separate "bootstrap copies match canonical" check as its own step), status-comment
+  block → `pr-status-comment`. **`release.yml` needs more care, not a blind swap**: it dispatches
+  once *per changed feature* via a bash loop calling `gh api` directly, not a single
+  `peter-evans/repository-dispatch` call like the others — using `trigger-website-update` means
+  turning that loop into a dynamic matrix (`fromJson(needs.detect.outputs.changed)`), a real
+  behavior change to GHCR publish automation the whole org depends on. Dry-run via
+  `workflow_dispatch` + `force-all: false` before merging.
+- [ ] 🟡 **`typescript`** (largest single diff): all 7 `job-*.yml` reusable workflows swap their
+  `checkout → setup-node → corepack → pnpm install` sequence for `setup-pnpm`; `pr-validation.yml`
+  status-comment block → `pr-status-comment` with the existing coverage/mutation/runtime/bench
+  sections passed via `extra-markdown` so none of that formatting is lost; `release.yml`'s
+  primary-plus-Pushinator-fallback dispatch in `trigger-website-docs` collapses into one
+  `trigger-website-update` call (fallback built in).
+- [ ] 🟢 **`.github`**: all 3 `manual-fallback-website-*.yml` files → `trigger-website-update`,
+  each dropping from ~37-42 lines to roughly 10.
