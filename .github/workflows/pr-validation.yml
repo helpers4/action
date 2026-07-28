@@ -93,6 +93,7 @@ jobs:
         uses: ./setup-pnpm
         with:
           node-version: "24"
+          version: "10"
           install: "false"
 
       - name: "Test: node and pnpm are on PATH"

@@ -2,7 +2,7 @@
 # Copyright (C) 2025 baxyz
 # SPDX-License-Identifier: LGPL-3.0-or-later
 name: Setup pnpm
-description: Setup Node.js + pnpm via corepack, optionally installing dependencies
+description: Setup Node.js + pnpm, optionally installing dependencies
 author: helpers4
 branding:
   icon: package
@@ -11,6 +11,10 @@ inputs:
   node-version:
     description: Node.js version to install (passed to actions/setup-node)
     required: true
+  version:
+    description: pnpm version to install (leave empty to auto-detect from the "packageManager" field in package.json)
+    required: false
+    default: ""
   install:
     description: Run "pnpm install" after setup
     required: false
@@ -20,9 +24,13 @@ inputs:
     required: false
     default: "true"
   working-directory:
-    description: Directory to run "pnpm install" in
+    description: Directory containing package.json / pnpm-lock.yaml, and where "pnpm install" runs
     required: false
     default: "."
+  cache:
+    description: Cache the pnpm store directory (passed to pnpm/action-setup)
+    required: false
+    default: "true"
 runs:
   using: composite
   steps:
@@ -31,9 +39,13 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Enable corepack
-      shell: bash
-      run: corepack enable
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v6.0.9
+      with:
+        version: ${{ inputs.version }}
+        package_json_file: ${{ inputs.working-directory }}/package.json
+        cache: ${{ inputs.cache }}
+        cache_dependency_path: ${{ inputs.working-directory }}/pnpm-lock.yaml
 
     - name: Install dependencies
       if: ${{ inputs.install == 'true' }}
