@@ -6,6 +6,13 @@ duplicated across every helpers4 repo's `pr-validation.yml` into one step. Posti
 delegated to [`marocchino/sticky-pull-request-comment`](https://github.com/marocchino/sticky-pull-request-comment)
 rather than reimplemented.
 
+## Requirements
+
+- The calling job needs **`permissions: pull-requests: write`** (not `issues: write` — the
+  underlying action's permission manifest requires `pull-requests: write` specifically, and
+  without it the comment step fails with `Resource not accessible by integration`, even though
+  the REST endpoint it hits is nominally `issues/comments`).
+
 ## Inputs
 
 - **jobs** (required): JSON object mapping a display label to a status, e.g.
