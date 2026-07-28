@@ -32,6 +32,53 @@ Validates that all commit messages in a pull request follow the [Conventional Co
 
 📖 [Full documentation](conventional-commits/README.md)
 
+### Setup pnpm
+
+Sets up Node.js + pnpm via corepack, optionally installing dependencies.
+
+**Usage:**
+
+```yaml
+- uses: helpers4/action/setup-pnpm@v1
+  with:
+    node-version: "26"
+```
+
+📖 [Full documentation](setup-pnpm/README.md)
+
+### PR Status Comment
+
+Posts or updates a single sticky PR comment summarizing job statuses as a table.
+
+**Usage:**
+
+```yaml
+- uses: helpers4/action/pr-status-comment@v1
+  with:
+    jobs: |
+      { "🏗️ Build": "${{ needs.build.result }}" }
+```
+
+📖 [Full documentation](pr-status-comment/README.md)
+
+### Trigger Website Update
+
+Dispatches a `repository_dispatch` event to `helpers4/website` via a GitHub App token, with an
+optional fallback identity.
+
+**Usage:**
+
+```yaml
+- uses: helpers4/action/trigger-website-update@v1
+  with:
+    event-type: action-release
+    payload: '{"version": "${{ github.ref_name }}"}'
+    app-id: ${{ vars.TRIGGANATOR_ID }}
+    app-private-key: ${{ secrets.TRIGGANATOR_KEY }}
+```
+
+📖 [Full documentation](trigger-website-update/README.md)
+
 ## Documentation
 
 Visit [**helpers4.dev/action**](https://helpers4.dev/action) for complete documentation.

@@ -1,0 +1,95 @@
+# This file is part of helpers4.
+# Copyright (C) 2025 baxyz
+# SPDX-License-Identifier: LGPL-3.0-or-later
+name: Trigger Website Update
+description: Dispatch a repository_dispatch event to helpers4/website via a GitHub App token, with an optional fallback identity
+author: helpers4
+branding:
+  icon: send
+  color: blue
+inputs:
+  event-type:
+    description: repository_dispatch event type (e.g. action-release, devcontainer-release, typescript-release)
+    required: true
+  payload:
+    description: JSON string sent as client_payload
+    required: true
+  app-id:
+    description: GitHub App client ID used for the primary token
+    required: true
+  app-private-key:
+    description: GitHub App private key used for the primary token
+    required: true
+  fallback-app-id:
+    description: GitHub App client ID used to retry if the primary dispatch fails (optional)
+    required: false
+    default: ""
+  fallback-app-private-key:
+    description: GitHub App private key used to retry if the primary dispatch fails (optional)
+    required: false
+    default: ""
+  target-owner:
+    description: Owner of the target repository
+    required: false
+    default: helpers4
+  target-repo:
+    description: Name of the target repository (without owner)
+    required: false
+    default: website
+runs:
+  using: composite
+  steps:
+    - name: Get primary token
+      id: primary_token
+      uses: actions/create-github-app-token@v3.2.0
+      with:
+        client-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.app-private-key }}
+        owner: ${{ inputs.target-owner }}
+        repositories: ${{ inputs.target-repo }}
+        permission-contents: write
+
+    - name: Dispatch (primary)
+      id: primary_dispatch
+      continue-on-error: true
+      uses: peter-evans/repository-dispatch@v4.0.1
+      with:
+        token: ${{ steps.primary_token.outputs.token }}
+        repository: ${{ inputs.target-owner }}/${{ inputs.target-repo }}
+        event-type: ${{ inputs.event-type }}
+        client-payload: ${{ inputs.payload }}
+
+    - name: Get fallback token
+      id: fallback_token
+      if: ${{ steps.primary_dispatch.outcome != 'success' && inputs.fallback-app-id != '' }}
+      uses: actions/create-github-app-token@v3.2.0
+      with:
+        client-id: ${{ inputs.fallback-app-id }}
+        private-key: ${{ inputs.fallback-app-private-key }}
+        owner: ${{ inputs.target-owner }}
+        repositories: ${{ inputs.target-repo }}
+        permission-contents: write
+
+    - name: Dispatch (fallback)
+      id: fallback_dispatch
+      if: ${{ steps.primary_dispatch.outcome != 'success' && inputs.fallback-app-id != '' }}
+      continue-on-error: true
+      uses: peter-evans/repository-dispatch@v4.0.1
+      with:
+        token: ${{ steps.fallback_token.outputs.token }}
+        repository: ${{ inputs.target-owner }}/${{ inputs.target-repo }}
+        event-type: ${{ inputs.event-type }}
+        client-payload: ${{ inputs.payload }}
+
+    - name: Summary
+      shell: bash
+      env:
+        PRIMARY_OUTCOME: ${{ steps.primary_dispatch.outcome }}
+        FALLBACK_OUTCOME: ${{ steps.fallback_dispatch.outcome || '' }}
+      run: |
+        if [[ "$PRIMARY_OUTCOME" == "success" || "$FALLBACK_OUTCOME" == "success" ]]; then
+          echo "✅ Dispatched ${{ inputs.event-type }} to ${{ inputs.target-owner }}/${{ inputs.target-repo }}"
+        else
+          echo "::error::Failed to dispatch ${{ inputs.event-type }} to ${{ inputs.target-owner }}/${{ inputs.target-repo }} (primary and fallback both failed)"
+          exit 1
+        fi

@@ -43,6 +43,94 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y shellcheck
           shellcheck -S warning conventional-commits/scripts/validate.sh
+          shellcheck -S warning pr-status-comment/scripts/build-comment.sh
+
+      - name: Set status
+        id: status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  validate-action-manifests:
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.status.outputs.status }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Validate action.yml syntax
+        run: |
+          for f in conventional-commits/action.yml setup-pnpm/action.yml \
+                   pr-status-comment/action.yml trigger-website-update/action.yml; do
+            echo "→ $f"
+            yq eval '.' "$f" > /dev/null
+          done
+
+      - name: Set status
+        id: status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  test-setup-pnpm:
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.status.outputs.status }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: "Test: setup-pnpm without install"
+        uses: ./setup-pnpm
+        with:
+          node-version: "24"
+          install: "false"
+
+      - name: "Test: node and pnpm are on PATH"
+        run: |
+          node --version
+          pnpm --version
+
+      - name: Set status
+        id: status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  test-pr-status-comment:
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.status.outputs.status }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: "Test: build-comment.sh produces a status table"
+        env:
+          INPUT_JOBS: '{"Build": "success", "Tests": "failure"}'
+          INPUT_EXTRA_MARKDOWN: ""
+        run: |
+          OUTPUT=$(bash pr-status-comment/scripts/build-comment.sh)
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep -q "1/2 checks passed"
+          echo "$OUTPUT" | grep -q "passing"
+          echo "$OUTPUT" | grep -q "failing"
+
+      - name: "Test: script is executable and has valid syntax"
+        run: bash -n pr-status-comment/scripts/build-comment.sh
 
       - name: Set status
         id: status
@@ -93,7 +181,15 @@ jobs:
 
   pr-comment:
     runs-on: ubuntu-latest
-    needs: [ conventional-commits, shellcheck, test-action ]
+    needs:
+      [
+        conventional-commits,
+        shellcheck,
+        test-action,
+        validate-action-manifests,
+        test-setup-pnpm,
+        test-pr-status-comment,
+      ]
     if: always()
     steps:
       - name: Update PR comment
@@ -105,6 +201,9 @@ jobs:
               '🧾 Conventional Commits': "${{ needs.conventional-commits.outputs.status || 'unknown' }}",
               '🐚 ShellCheck': "${{ needs.shellcheck.outputs.status || 'unknown' }}",
               '🧪 Action Tests': "${{ needs.test-action.outputs.status || 'unknown' }}",
+              '📄 Manifest Validation': "${{ needs.validate-action-manifests.outputs.status || 'unknown' }}",
+              '📦 setup-pnpm Tests': "${{ needs.test-setup-pnpm.outputs.status || 'unknown' }}",
+              '💬 pr-status-comment Tests': "${{ needs.test-pr-status-comment.outputs.status || 'unknown' }}",
             };
 
             const rows = Object.entries(jobs).map(([job, status]) => {

@@ -1,5 +1,8 @@
 [
   "conventional-commits",
+  "setup-pnpm",
+  "pr-status-comment",
+  "trigger-website-update",
   "deps",
   "CI-CD"
 ]
