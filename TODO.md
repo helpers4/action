@@ -51,7 +51,7 @@ Only open items live here. Anything finished is in git history, not duplicated i
 
 ## Roll out new actions to consumers — done
 
-> `setup-pnpm`, `pr-status-comment`, and `trigger-website-update` were built and dogfooded in this
+> `setup-pnpm`, `pr-status-comment`, and `dispatch-with-fallback` were built and dogfooded in this
 > repo itself (#12, #13), then rolled out to all four consumers below (2026-07-28). Kept here
 > briefly rather than only in git history since two follow-ups fell out of the rollout that are
 > still open — see the next section.
@@ -64,18 +64,18 @@ Only open items live here. Anything finished is in git history, not duplicated i
   `shellcheck` job → `ludeeus/action-shellcheck` (scoped to preserve the exact previous
   install.sh-only coverage), status-comment → `pr-status-comment`. `release.yml`'s per-feature
   `gh api` dispatch loop → a dynamic matrix (`fromJson(needs.detect.outputs.changed)`) calling
-  `trigger-website-update` once per changed feature — **could not be dry-run before merge** (no
+  `dispatch-with-fallback` once per changed feature — **could not be dry-run before merge** (no
   true no-op mode exists in this workflow, even `workflow_dispatch` + `force-all:false` still does
   a real publish); first real validation is the next actual feature version bump. CI green on
   everything that *could* run pre-merge.
 - [x] **`typescript`** ([PR #123](https://github.com/helpers4/typescript/pull/123)) — all 7
   `job-*.yml` reusable workflows → `setup-pnpm`; status-comment → `pr-status-comment` with the
   coverage/mutation/runtime/bench sections preserved via `extra-markdown`; `release.yml`'s
-  primary+Pushinator-fallback dispatch → one `trigger-website-update` call (fallback built in).
+  primary+Pushinator-fallback dispatch → one `dispatch-with-fallback` call (fallback built in).
   `helpers4/action` refs pinned to a commit SHA here, not `@main` — matches this repo's existing
   SHA-pinning convention (the only repo that pins third-party actions this strictly).
 - [x] **`.github`** ([PR #7](https://github.com/helpers4/.github/pull/7)) — all 3
-  `manual-fallback-website-*.yml` → `trigger-website-update`. **Also found and fixed a real
+  `manual-fallback-website-*.yml` → `dispatch-with-fallback`. **Also found and fixed a real
   pre-existing bug while here**: these 3 files (+ their README runbook) lived at `workflows/*.yml`
   (repo-root), not `.github/workflows/` — GitHub never registered them as runnable workflows,
   confirmed via the Actions API (only `reusable-auto-assign.yml`/`reusable-proof-html.yml` showed

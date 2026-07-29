@@ -1,15 +1,21 @@
 # This file is part of helpers4.
 # Copyright (C) 2025 baxyz
 # SPDX-License-Identifier: LGPL-3.0-or-later
-name: Trigger Website Update
-description: Dispatch a repository_dispatch event to helpers4/website via a GitHub App token, with an optional fallback identity
+name: Dispatch with Fallback
+description: Dispatch a repository_dispatch event to a repository via a GitHub App token, with an optional fallback identity retried on failure
 author: helpers4
 branding:
   icon: send
   color: blue
 inputs:
+  target-owner:
+    description: Owner of the target repository
+    required: true
+  target-repo:
+    description: Name of the target repository (without owner)
+    required: true
   event-type:
-    description: repository_dispatch event type (e.g. action-release, devcontainer-release, typescript-release)
+    description: repository_dispatch event type
     required: true
   payload:
     description: JSON string sent as client_payload
@@ -28,14 +34,6 @@ inputs:
     description: GitHub App private key used to retry if the primary dispatch fails (optional)
     required: false
     default: ""
-  target-owner:
-    description: Owner of the target repository
-    required: false
-    default: helpers4
-  target-repo:
-    description: Name of the target repository (without owner)
-    required: false
-    default: website
 runs:
   using: composite
   steps:

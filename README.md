@@ -62,23 +62,25 @@ Posts or updates a single sticky PR comment summarizing job statuses as a table.
 
 📖 [Full documentation](pr-status-comment/README.md)
 
-### Trigger Website Update
+### Dispatch with Fallback
 
-Dispatches a `repository_dispatch` event to `helpers4/website` via a GitHub App token, with an
-optional fallback identity.
+Dispatches a `repository_dispatch` event to a repository via a GitHub App token, with an optional
+fallback identity retried automatically on failure.
 
 **Usage:**
 
 ```yaml
-- uses: helpers4/action/trigger-website-update@v1
+- uses: helpers4/action/dispatch-with-fallback@v1
   with:
+    target-owner: helpers4
+    target-repo: website
     event-type: action-release
     payload: '{"version": "${{ github.ref_name }}"}'
     app-id: ${{ vars.TRIGGANATOR_ID }}
     app-private-key: ${{ secrets.TRIGGANATOR_KEY }}
 ```
 
-📖 [Full documentation](trigger-website-update/README.md)
+📖 [Full documentation](dispatch-with-fallback/README.md)
 
 ## Documentation
 

@@ -2,7 +2,7 @@
   "conventional-commits",
   "setup-pnpm",
   "pr-status-comment",
-  "trigger-website-update",
+  "dispatch-with-fallback",
   "deps",
   "CI-CD"
 ]
