@@ -39,7 +39,7 @@ jobs:
       - name: Validate action.yml syntax
         run: |
           for f in conventional-commits/action.yml setup-pnpm/action.yml \
-                   pr-status-comment/action.yml trigger-website-update/action.yml; do
+                   pr-status-comment/action.yml dispatch-with-fallback/action.yml; do
             echo "→ $f"
             yq eval '.' "$f" > /dev/null
           done

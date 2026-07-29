@@ -30,8 +30,10 @@ jobs:
 
       - name: Trigger website update
         continue-on-error: true
-        uses: helpers4/action/trigger-website-update@main
+        uses: helpers4/action/dispatch-with-fallback@main
         with:
+          target-owner: helpers4
+          target-repo: website
           event-type: action-release
           payload: '{"version": "${{ github.ref_name }}"}'
           app-id: ${{ vars.TRIGGANATOR_ID }}
