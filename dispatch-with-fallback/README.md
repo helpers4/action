@@ -1,20 +1,16 @@
 # Dispatch with Fallback
 
-Dispatch a `repository_dispatch` event to a repository via a GitHub App token, with an optional
-fallback identity retried automatically on failure — collapses the "get a GitHub App token →
-`peter-evans/repository-dispatch`" sequence duplicated across every helpers4 release workflow
-(and the `.github` manual-fallback workflows) into one step, with retry-on-failure built in for
-every caller instead of only `typescript` having it.
-
-Fully generic — nothing in this action assumes a particular org or target repository; every
-caller in the helpers4 org happens to point it at `helpers4/website` today, but that's just how
-it's used here, not something baked into the action.
+Send a `repository_dispatch` event to a repository using a GitHub App token, with an optional
+second identity retried automatically if the first attempt fails. Useful for cross-repo
+automation — e.g. a release in one repo triggering a docs rebuild in another — where you want a
+backup identity to retry with if the primary one hits a transient failure, rate limit, or
+permission issue.
 
 ## Inputs
 
 - **target-owner** (required): Owner of the target repository.
 - **target-repo** (required): Name of the target repository, without owner.
-- **event-type** (required): `repository_dispatch` event type, e.g. `action-release`.
+- **event-type** (required): `repository_dispatch` event type.
 - **payload** (required): JSON string sent as `client_payload`, e.g.
   `{"version": "${{ github.ref_name }}"}`.
 - **app-id** / **app-private-key** (required): GitHub App credentials for the primary token.
@@ -32,30 +28,30 @@ retries once with the fallback identity before failing.
 ### Basic usage (no fallback, non-blocking)
 
 ```yaml
-- name: Trigger website update
+- name: Notify docs repo
   continue-on-error: true
   uses: helpers4/action/dispatch-with-fallback@v1
   with:
-    target-owner: helpers4
-    target-repo: website
-    event-type: action-release
+    target-owner: my-org
+    target-repo: docs-site
+    event-type: upstream-release
     payload: '{"version": "${{ github.ref_name }}"}'
-    app-id: ${{ vars.TRIGGANATOR_ID }}
-    app-private-key: ${{ secrets.TRIGGANATOR_KEY }}
+    app-id: ${{ vars.RELEASE_APP_ID }}
+    app-private-key: ${{ secrets.RELEASE_APP_KEY }}
 ```
 
-### With fallback identity (matches `typescript`'s Trigganator → Pushinator retry)
+### With a fallback identity
 
 ```yaml
-- name: Trigger website docs update
+- name: Notify docs repo
   uses: helpers4/action/dispatch-with-fallback@v1
   with:
-    target-owner: helpers4
-    target-repo: website
-    event-type: typescript-release
+    target-owner: my-org
+    target-repo: docs-site
+    event-type: upstream-release
     payload: '{"version": "${{ needs.publish.outputs.new-version }}"}'
-    app-id: ${{ vars.TRIGGANATOR_ID }}
-    app-private-key: ${{ secrets.TRIGGANATOR_KEY }}
-    fallback-app-id: ${{ vars.PUSHINATOR_ID }}
-    fallback-app-private-key: ${{ secrets.PUSHINATOR_KEY }}
+    app-id: ${{ vars.RELEASE_APP_ID }}
+    app-private-key: ${{ secrets.RELEASE_APP_KEY }}
+    fallback-app-id: ${{ vars.BACKUP_APP_ID }}
+    fallback-app-private-key: ${{ secrets.BACKUP_APP_KEY }}
 ```

@@ -1,19 +1,16 @@
 # Setup pnpm
 
-Setup Node.js + pnpm, optionally installing dependencies — collapses the `actions/setup-node` →
-`pnpm/action-setup` → `pnpm install` sequence duplicated across every helpers4 repo's CI into one
-step. Wraps the official [`pnpm/action-setup`](https://github.com/pnpm/action-setup) (1300★,
-actively maintained by the pnpm org) rather than reimplementing pnpm installation — deliberately
-**not** using `corepack enable` for this, since Node.js is removing Corepack from its default
-distribution starting with Node.js 26.
+Set up Node.js and pnpm in one step, optionally installing dependencies. Wraps the official
+[`pnpm/action-setup`](https://github.com/pnpm/action-setup) (actively maintained by the pnpm org)
+rather than `corepack enable` — Node.js is removing Corepack from its default distribution
+starting with Node.js 26, so relying on it to install pnpm is no longer safe.
 
 ## Requirements
 
 - Checkout the repository yourself before this action (with the `fetch-depth` your job needs) —
   this action does not run `actions/checkout`, since callers differ on depth.
 - The repo's `packageManager` field in `package.json` selects the pnpm version by default; pass
-  the **version** input explicitly for repos without one (e.g. this repo itself, which has no
-  `package.json`).
+  the **version** input explicitly for repos without one.
 
 ## Inputs
 
