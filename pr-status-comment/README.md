@@ -1,10 +1,10 @@
 # PR Status Comment
 
-Post or update a single sticky PR comment summarizing job statuses as a table — collapses the
-~80-line `actions/github-script` block (build a table, find-or-create/update a bot comment)
-duplicated across every helpers4 repo's `pr-validation.yml` into one step. Posting itself is
-delegated to [`marocchino/sticky-pull-request-comment`](https://github.com/marocchino/sticky-pull-request-comment)
-rather than reimplemented.
+Post or update a single sticky PR comment summarizing your CI job statuses as a table — one bot
+comment per PR that updates in place across pushes, instead of a new comment piling up every run.
+This action builds the table (and any extra Markdown sections you pass in) from your job results;
+posting itself is delegated to
+[`marocchino/sticky-pull-request-comment`](https://github.com/marocchino/sticky-pull-request-comment).
 
 ## Requirements
 
