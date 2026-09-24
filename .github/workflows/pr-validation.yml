@@ -108,6 +108,34 @@ jobs:
       - name: "Test: script is executable and has valid syntax"
         run: bash -n conventional-commits/scripts/validate.sh
 
+  # The one check to set as required — either in a new branch ruleset (main has no protection at
+  # all today) or in classic branch protection — instead of every individual job above.
+  required:
+    name: Required checks passed
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      [
+        conventional-commits,
+        shellcheck,
+        test-action,
+        validate-action-manifests,
+        test-setup-pnpm,
+        test-pr-status-comment,
+      ]
+    steps:
+      - name: Fail if any required job failed or was cancelled
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "::error::At least one required job failed."
+            exit 1
+          fi
+          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "::error::At least one required job was cancelled."
+            exit 1
+          fi
+          echo "All required jobs passed."
+
   pr-comment:
     runs-on: ubuntu-latest
     needs:
