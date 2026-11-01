@@ -53,7 +53,7 @@ jobs:
       - name: "Test: setup-pnpm without install"
         uses: ./setup-pnpm
         with:
-          node-version: "24"
+          node-version: "26"
           version: "10"
           install: "false"
           cache: "false"
