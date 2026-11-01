@@ -50,7 +50,7 @@ None — Node.js and pnpm are left configured on `PATH` for subsequent steps.
 - uses: actions/checkout@v7
 - uses: helpers4/action/setup-pnpm@v1
   with:
-    node-version: "24"
+    node-version: "26"
     version: "10"
     install: "false"
 - run: pnpm --version
