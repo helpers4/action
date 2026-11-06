@@ -4,5 +4,7 @@
   "pr-status-comment",
   "dispatch-with-fallback",
   "deps",
-  "CI-CD"
+  "ci",
+  "ai",
+  "docs"
 ]
